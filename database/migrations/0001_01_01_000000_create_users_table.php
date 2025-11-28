@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('plano_id');
             $table->string('nome');
             $table->string('email')->unique();
+            $table->unsignedBigInteger('empresa_id')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('cpf_cnpj')->unique();
             $table->date('nascimento');
@@ -25,6 +26,8 @@ return new class extends Migration
             $table->string('cidade');
             $table->string('estado');
             $table->string('senha')->nullable();
+            $table->boolean('master')->default(false);
+            $table->string('tipo_usuario')->default('colaborador');
 
             $table->foreign('plano_id')->references('id')->on('planos')->onDelete('cascade');
             $table->rememberToken();

@@ -32,6 +32,7 @@ class User extends Authenticatable
         'cidade',
         'estado',
         'plano_id',
+        'master'
     ];
 
     /**
@@ -40,8 +41,11 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        'password',
+        'senha',
         'remember_token',
+        'created_at',
+        'updated_at',
+        'email_verified_at',
     ];
 
     /**
@@ -72,5 +76,15 @@ class User extends Authenticatable
     public function planoAtual()
     {
         return $this->belongsTo(PlanosModel::class, 'plano_id', 'id');
+    }
+
+    public function empresasResponsavel()
+    {
+        return $this->hasMany(EmpresaModel::class, 'responsavel_id');
+    }
+
+    public function colaboradores()
+    {
+        return $this->hasMany(ColaboradoresModel::class, 'usuario_id');
     }
 }

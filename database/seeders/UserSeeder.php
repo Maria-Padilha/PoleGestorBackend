@@ -27,6 +27,8 @@ class UserSeeder extends Seeder
                 'cidade' => 'Cuiabá',
                 'estado' => 'MT',
                 'plano_id' => 1,
+                'master' => true,
+                'tipo_usuario' => 'master',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
