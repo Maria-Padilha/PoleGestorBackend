@@ -59,16 +59,19 @@ class ItensInventarioController extends BaseController
             ], 201);
         }
 
-        $data = array_merge($request->validated(), [
-            'usuario_id' => $this->userMaster->id,
-            'empresa_id' => $this->empresa->id,
-        ]);
+        else {
+            $data = array_merge($request->validated(), [
+                'usuario_id' => $this->userMaster->id,
+                'empresa_id' => $this->empresa ? $this->empresa->id : null,
+            ]);
 
-        $itens = ItensInventarioModel::create($data);
-        return response()->json([
-            'message' => 'Item de inventário criado com sucesso.',
-            'data' => $itens
-        ], 201);
+            $itens = ItensInventarioModel::create($data);
+
+            return response()->json([
+                'message' => 'Item de inventário criado com sucesso.',
+                'data' => $itens
+            ], 201);
+        }
     }
 
     /**
