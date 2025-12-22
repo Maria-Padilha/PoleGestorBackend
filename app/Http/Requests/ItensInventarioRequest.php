@@ -42,7 +42,7 @@ class ItensInventarioRequest extends FormRequest
             'tipo' => 'required|string|max:100|in:consumivel,equipamento',
             'unidade' => 'required|string|max:50',
             'controla_estoque' => 'required|boolean',
-            'quantidade_atual' => 'required|numeric',
+            'quantidade_atual' => 'nullable|numeric',
             'quantidade_total' => 'nullable|numeric',
             'quantidade_em_uso' => 'nullable|numeric',
             'quantidade_disponivel' => 'nullable|numeric',

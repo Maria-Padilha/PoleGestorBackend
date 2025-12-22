@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('unidade')->default('un');
 
             $table->boolean('controla_estoque')->default(true);
-            $table->integer('quantidade_atual')->default(0);
+            $table->integer('quantidade_atual')->default(0)->nullable();
 
             $table->integer('quantidade_total')->default(0)->nullable();
             $table->integer('quantidade_em_uso')->default(0)->nullable();
