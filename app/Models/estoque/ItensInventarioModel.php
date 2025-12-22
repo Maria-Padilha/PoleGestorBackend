@@ -42,7 +42,6 @@ class ItensInventarioModel extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'quantidade_atual',
         'quantidade_total',
         'quantidade_em_uso',
         'quantidade_disponivel',

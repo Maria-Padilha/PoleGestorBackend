@@ -15,6 +15,12 @@ class ItensInventarioRequest extends FormRequest
         return true;
     }
 
+    protected function getItemId()
+    {
+        return $this->route('itens_inventario') ?? $this->id;
+    }
+
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -22,12 +28,16 @@ class ItensInventarioRequest extends FormRequest
      */
     public function rules(): array
     {
+        $id = $this->route('itens_inventario');
+
         return [
             'nome' => 'required|string|max:255',
             'descricao' => 'nullable|string',
             'codigo' => [
                 'required',
-                Rule::unique('itens_inventario', 'codigo')->ignore($this->route('itens_inventario'))
+                Rule::unique('itens_inventario')->where(function ($query) {
+                    return $query->where('id', $this->id);
+                })->ignore($id)
             ],
             'tipo' => 'required|string|max:100|in:consumivel,equipamento',
             'unidade' => 'required|string|max:50',
