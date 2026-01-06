@@ -31,6 +31,8 @@ class User extends Authenticatable
         'cep',
         'cidade',
         'estado',
+        'empresa_id',
+        'tipo_usuario',
         'plano_id',
         'master'
     ];
@@ -57,7 +59,6 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
         ];
     }
 
@@ -86,5 +87,10 @@ class User extends Authenticatable
     public function colaboradores()
     {
         return $this->hasMany(ColaboradoresModel::class, 'usuario_id');
+    }
+
+    public function empresa()
+    {
+        return $this->belongsTo(EmpresaModel::class, 'empresa_id', 'id');
     }
 }

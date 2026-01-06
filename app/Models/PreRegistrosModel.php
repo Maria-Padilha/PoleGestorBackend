@@ -12,6 +12,7 @@ class PreRegistrosModel extends Model
         'email',
         'cpf_cnpj',
         'telefone',
+        'nascimento',
         'token',
         'token_expires_at',
     ];

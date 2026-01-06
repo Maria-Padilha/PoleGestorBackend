@@ -49,6 +49,7 @@ class UserRequest extends FormRequest
             'cidade' => 'nullable|string|max:100',
             'estado' => 'nullable|string|max:100',
             'plano_id' => 'nullable|exists:planos,id',
+            'tipo_usuario' => 'nullable|in:colaborador,master',
             'master' => 'required|boolean',
         ];
     }

@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // rotas de autenticação
     Route::get('/perfil', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/alterar-senha', [AuthController::class, 'updatePassword']);
 
     Route::resource('pessoas', PessoasController::class);
     Route::resource('itens-inventario', ItensInventarioController::class);
@@ -80,6 +81,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [EmpresaController::class, 'destroy']);
     });
 
-    Route::resource('permissoes', PermissoesController::class);
+    Route::get('permissoes', [PermissoesController::class, 'index']);
+    Route::put('permissoes/{colaboradorId}', [PermissoesController::class, 'update']);
+    Route::get('/permissoes/{colaboradorId}', [PermissoesController::class, 'permissoesDoColaborador']);
+
 
 });

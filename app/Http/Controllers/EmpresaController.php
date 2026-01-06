@@ -17,7 +17,7 @@ class EmpresaController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user || $user->master !== true) {
+        if (!$user || $user->master !== 1) {
             $colab = ColaboradoresModel::where('usuario_id', $user->id);
             return response()->json([
                 'message' => 'Lista de empresas vinculadas ao colaborador.',
@@ -42,7 +42,7 @@ class EmpresaController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user || $user->master !== true) {
+        if (!$user || $user->master !== 1) {
             return response()->json([
                 'error' => 'Apenas usuários master podem cadastrar uma empresa.'
             ], 403);
@@ -70,7 +70,7 @@ class EmpresaController extends Controller
         $user = auth()->user();
 
         // 🔒 Apenas master pode atualizar empresa
-        if (!$user || $user->master !== true) {
+        if (!$user || $user->master !== 1) {
             return response()->json([
                 'error' => 'Apenas usuários master podem atualizar empresas.'
             ], 403);
@@ -110,7 +110,7 @@ class EmpresaController extends Controller
             ], 404);
         }
 
-        if (!$user || $user->master !== true || $empresa->responsavel_id !== $user->id) {
+        if (!$user || $user->master !== 1 || $empresa->responsavel_id !== $user->id) {
             return response()->json([
                 'error' => 'Apenas o usuário master responsável pode deletar esta empresa.'
             ], 403);

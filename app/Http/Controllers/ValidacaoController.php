@@ -120,6 +120,7 @@ class ValidacaoController extends Controller
         $request->validate([
             'nome' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:pre_registros,email',
+            'nascimento' => 'required|date',
             'cpf_cnpj' => 'nullable|string|max:20|unique:pre_registros,cpf_cnpj',
             'telefone' => 'nullable|string',
         ]);
@@ -146,6 +147,7 @@ class ValidacaoController extends Controller
         $registro = PreRegistrosModel::create([
             'nome' => $request->nome,
             'email' => $request->email,
+            'nascimento' => $request->nascimento,
             'cpf_cnpj' => $request->cpf_cnpj,
             'telefone' => $request->telefone,
             'token' => $token,
@@ -189,6 +191,7 @@ class ValidacaoController extends Controller
         return response()->json([
             'nome' => $registro->nome,
             'email' => $registro->email,
+            'nascimento' => $registro->nascimento,
             'cpf_cnpj' => $registro->cpf_cnpj,
             'telefone' => $registro->telefone,
         ]);

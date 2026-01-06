@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ColaboradorRequest;
 use App\Http\Requests\PermissoesRequest;
 use App\Http\Requests\UserRequest;
 use App\Models\ColaboradoresModel;
@@ -17,119 +18,116 @@ class ColaboradorController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user || $user->master !== true) {
+        if (!$user || $user->master !== 1) {
             return response()->json([
-                'error' => 'Apenas usuários master podem listar os colaboradores.'
+                'message' => 'Apenas usuários master podem listar os colaboradores.'
             ], 403);
         }
 
+        // Limites por plano
+        $limites = [
+            1 => 3,
+            2 => 6,
+            3 => 9,
+        ];
+
+        $limite = $limites[$user->plano_id] ?? null;
+
+        // Lista colaboradores
         $colaboradores = ColaboradoresModel::whereHas('empresa', function ($query) use ($user) {
             $query->where('responsavel_id', $user->id);
-        })->with('permissoes')->get();
+        })->with(['permissoes', 'usuario'])->get();
+
+        $quantidade = $colaboradores->count();
+
+        // Pode cadastrar?
+        $permitidoCadastrar = $limite === null || $quantidade < $limite;
 
         return response()->json([
-            'colaboradores' => $colaboradores
+            'permitido_cadastrar' => $permitidoCadastrar,
+            'limite_plano' => $limite,
+            'total_colaboradores' => $quantidade,
+            'colaboradores' => $colaboradores,
         ]);
     }
 
-    public function store(UserRequest $request, PermissoesRequest $permissoesRequest)
+    public function store(UserRequest $request, PermissoesRequest $permissoesRequest, ColaboradorRequest $colabRequest)
     {
         $user = auth()->user();
 
-        /*
-        |--------------------------------------------------------------------------
-        | 1. VERIFICAR SE É MASTER
-        |--------------------------------------------------------------------------
-        */
-        if (!$user || $user->master !== true) {
+        if (!$user || $user->master !== 1) {
             return response()->json([
-                'error' => 'Apenas usuários master podem cadastrar colaboradores.'
+                'message' => 'Apenas usuários master podem cadastrar colaboradores.'
             ], 403);
         }
 
-        if ($user->plano_id === 1 && ColaboradoresModel::whereHas('empresa', function ($query) use ($user) {
+        // 1) Checa limite do plano
+        $limites = [
+            1 => 3,
+            2 => 6,
+            3 => 9,
+        ];
+
+        $limite = $limites[$user->plano_id] ?? null;
+
+        $qtd = ColaboradoresModel::whereHas('empresa', function ($query) use ($user) {
             $query->where('responsavel_id', $user->id);
-        })->count() >= 3) {
+        })->count();
+
+        if ($limite !== null && $qtd >= $limite) {
             return response()->json([
-                'error' => 'Seu plano atual permite apenas 3 colaboradores. Atualize seu plano para adicionar mais colaboradores.'
+                'message' => "Seu plano atual permite apenas {$limite} colaboradores. Atualize seu plano para adicionar mais colaboradores.",
+                'permitido_cadastrar' => false,
             ], 403);
         }
 
-        if ($user->plano_id === 2 && ColaboradoresModel::whereHas('empresa', function ($query) use ($user) {
-            $query->where('responsavel_id', $user->id);
-        })->count() >= 6) {
-            return response()->json([
-                'error' => 'Seu plano atual permite apenas 6 colaboradores. Atualize seu plano para adicionar mais colaboradores.'
-            ], 403);
-        }
-
-        if ($user->plano_id === 3 && ColaboradoresModel::whereHas('empresa', function ($query) use ($user) {
-            $query->where('responsavel_id', $user->id);
-        })->count() >= 9) {
-            return response()->json([
-                'error' => 'Você atingiu o limite máximo de colaboradores para o seu plano.'
-            ], 403);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | 2. VERIFICAR SE O MASTER TEM EMPRESA VINCULADA
-        |--------------------------------------------------------------------------
-        */
+        // 2) Empresa do master
         $empresa = EmpresaModel::where('responsavel_id', $user->id)->first();
 
         if (!$empresa) {
             return response()->json([
-                'error' => 'Você precisa cadastrar uma empresa antes de adicionar colaboradores.'
+                'message' => 'Você precisa cadastrar uma empresa antes de adicionar colaboradores.'
             ], 400);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | 3. VALIDAR DADOS DO COLABORADOR
-        |--------------------------------------------------------------------------
-        */
-        $validated = $request;
+        // 3) Dados validados
+        $userData = $request->validated();
+        $colabData = $colabRequest->validated();
+        $permData  = $permissoesRequest->validated();
 
-        /*
-        |--------------------------------------------------------------------------
-        | 4. CRIAR USUÁRIO
-        |--------------------------------------------------------------------------
-        */
-        $validated['plano_id'] = $user->plano_id;
-        $validated['tipo_usuario'] = 'colaborador';
-        $validated['master'] = false;
+        // 4) Monta payload do usuário
+        $userData['plano_id'] = $user->plano_id;
+        $userData['empresa_id'] = $empresa->id;
+        $userData['tipo_usuario'] = 'colaborador';
+        $userData['master'] = false;
 
-        $newUser = User::create($validated->all());
 
-        /*
-        |--------------------------------------------------------------------------
-        | 5. CRIAR REGISTRO DO COLABORADOR
-        |--------------------------------------------------------------------------
-        */
+        // 5) Cria tudo com transação
+        $result = \DB::transaction(function () use ($userData, $colabData, $permData, $empresa) {
 
-        $colaborador = ColaboradoresModel::create([
-            'usuario_id' => $newUser->id,
-            'empresa_id' => $empresa->id,  // Aqui vincula automaticamente!
-            'funcao' => $validated['funcao'] ?? null,
-            'ativo' => true,
-        ]);
+            $userData['empresa_id'] = $empresa->id;
+            $newUser = User::create($userData);
 
-        /*
-       |--------------------------------------------------------------------------
-       | 5. CRIAR PERMISSOES PARA O COLABORADOR
-       |--------------------------------------------------------------------------
-       */
+            $colaborador = ColaboradoresModel::create([
+                'usuario_id' => $newUser->id,
+                'empresa_id' => $empresa->id,
+                'funcao' => $colabData['funcao'] ?? null,
+                'ativo' => $colabData['ativo'] ?? true,
+            ]);
 
-        $permissoesRequestData = $permissoesRequest->validated();
-        $permissoesRequestData['colaborador_id'] = $colaborador->id;
-        PermissoesModel::create($permissoesRequestData);
+            $permData['colaborador_id'] = $colaborador->id;
+            PermissoesModel::create($permData);
+
+            return $colaborador;
+        });
 
         return response()->json([
             'message' => 'Colaborador criado com sucesso',
-            'colaborador' => $colaborador->load('usuario'),
+            'permitido_cadastrar' => true,
+            'colaborador' => $result->load(['usuario', 'permissoes']),
         ], 201);
     }
+
 
     public function update(UserRequest $request, $colaboradorId)
     {
@@ -143,7 +141,7 @@ class ColaboradorController extends Controller
         */
         if (!$user || $user->tipo_usuario !== 'master') {
             return response()->json([
-                'error' => 'Apenas usuários master podem atualizar colaboradores.'
+                'message' => 'Apenas usuários master podem atualizar colaboradores.'
             ], 403);
         }
 
@@ -158,7 +156,7 @@ class ColaboradorController extends Controller
 
         if (!$empresa) {
             return response()->json([
-                'error' => 'Você não tem permissão para atualizar colaboradores desta empresa.'
+                'message' => 'Você não tem permissão para atualizar colaboradores desta empresa.'
             ], 403);
         }
 
@@ -215,9 +213,9 @@ class ColaboradorController extends Controller
         $user = auth()->user();
         $empresaId = EmpresaModel::where('responsavel_id', $user->id)->value('id');
 
-        if (!$user || $user->master !== true) {
+        if (!$user || $user->master !== 1) {
             return response()->json([
-                'error' => 'Apenas usuários master podem remover os colaboradores.'
+                'message' => 'Apenas usuários master podem remover os colaboradores.'
             ], 403);
         }
 

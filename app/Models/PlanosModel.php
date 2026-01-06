@@ -24,6 +24,11 @@ class PlanosModel extends Model
         'economia_reais',
     ];
 
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
+
     public function getPrecoTotalAttribute($value)
     {
         return number_format((float)$value, 2, ',', '.');

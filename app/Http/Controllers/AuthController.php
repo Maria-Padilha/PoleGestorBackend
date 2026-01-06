@@ -30,9 +30,26 @@ class AuthController extends Controller
         ]);
     }
 
-    public function me(Request $request)
+    public function updatePassword(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if (!Hash::check($request->current_password, $user->senha)) {
+            return response()->json(['message' => 'Senha atual incorreta'], 400);
+        }
+
+        $user->senha = $request->new_password;
+        $user->save();
+        return response()->json(['message' => 'Senha atualizada com sucesso']);
+    }
+
+    public function me()
+    {
+        return response()->json(auth()->user()->load('planoAtual'));
     }
 
     public function logout(Request $request)
